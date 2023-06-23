@@ -35,6 +35,10 @@ Axios,
 ws,
 worker_threads
 
+Установка:
+--------------
+Для установки необходимых пакетов, перейдите в корневую папку проекта и в терминале пропишите команду: npm i
+
 Ключевые слова и ссылки:
 -----------
 	python: "https://www.python.org/", "https://ru.wikipedia.org/wiki/Python", "https://pythonworld.ru/samouchitel-python";
