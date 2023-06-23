@@ -42,4 +42,4 @@ worker_threads
 	go: "https://go.dev/", "https://ru.wikipedia.org/wiki/Go", "https://blog.skillfactory.ru/glossary/golang/";
 	kotlin: "https://kotlinlang.org/", "https://ru.wikipedia.org/wiki/Kotlin", "https://skillbox.ru/media/code/yazyk-programmirovaniya-kotlin/";
 
-=======
+
