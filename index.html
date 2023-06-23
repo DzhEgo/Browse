@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>WebSocket сервер</title>
+    <style>
+        body{
+            background-color: rgb(104, 104, 104);
+            margin: 0;
+            color: #f0f8ff;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        h1{
+            font-size: 60px;
+        }
+        .status {
+            margin-top: 10px;
+        }
+
+        label{
+            font-size: 30px;
+            margin-bottom: 15px;
+        }
+
+        .input_text{
+            display: block;
+            width: 40%;
+            height: calc(2.25rem + 2px);
+            padding: 0.375rem 0.75rem;
+            font-family: inherit;
+            font-size: 30px;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            border: 1px solid #bdbdbd;
+            border-radius: 0.25rem;
+            margin-bottom: 15px; 
+        }
+
+        button{
+            display: block;
+            width: 20%;
+            height: calc(2.25rem + 2px);
+            border: 1px solid #bdbdbd;
+            border-radius: 0.25rem;
+        }
+
+        h2{
+            font-size: 30px;
+        }
+
+        ul{
+            font-size: 25px;
+        }
+    </style>
+</head>
+<body>
+    <h1>FireFox 2.0</h1>
+    <label for="keyword">Введите ключевое слово:</label>
+    <input class="input_text" type="text" id="keyword"/>
+    <button onclick="sendKeyword()">Отправить</button>
+    <h2>Список URL:</h2>
+    <ul id="urlList"></ul>
+    <div id="downloadStatus" class="status"></div>
+    <h2>Список загруженного контента:</h2>
+    <ul id="contentList"></ul>
+    <script>
+        const socket = new WebSocket("ws://localhost:3000")
+
+        socket.onopen = () =>{
+            console.log("Веб-Сокет соединение открыто")
+        }
+
+        socket.onclose = () =>{
+            console.log("Веб-Сокет соединение закрыто")
+        }
+
+        socket.onmessage = function (event){
+            const data = JSON.parse(event.data)
+
+            if (Array.isArray(data)){
+                const urlList = document.getElementById("urlList")
+                urlList.innerHTML = ""
+				
+                data.forEach((url) =>{
+					const li = document.createElement("li")
+                    const link = document.createElement("a")
+                    link.href = "#"
+                    link.innerText = url
+                    link.onclick = () =>{
+                        downloadContent(url)
+                    }
+                    li.appendChild(link)
+                    urlList.appendChild(li)
+                })
+            } else if (data.status === "progress"){
+                const progressElement = document.getElementById("downloadStatus")
+                progressElement.innerHTML = `Загрузка: ${(data.progress * 1024).toFixed(2)} / ${(data.total * 1024).toFixed(2)} байт`
+            } else if (data.status === "finished"){
+                const contentList = document.getElementById("contentList")
+                const li = document.createElement("li")
+                const link = document.createElement("a")
+				let parser = new DOMParser()
+				let doc = parser.parseFromString(data.content, 'text/html')
+
+                link.href = "#"
+                link.innerText = "Контент: " + doc.title
+                link.onclick = () =>{
+                    showContent(data.content)
+                };
+                li.appendChild(link)
+                contentList.appendChild(li)
+
+                localStorage.setItem("downloadedContent", data.content)
+            }
+        }
+
+        socket.onerror = function (error){
+            console.error("WebSocket error:", error)
+        }
+
+        function sendKeyword(){
+            const keyword = document.getElementById("keyword").value
+            const data = { keyword }
+            socket.send(JSON.stringify(data))
+        }
+
+        function downloadContent(url){
+            const threads = parseInt(prompt("Введите количество потоков (по умолчанию 1):")) || 1
+            const data = { action: "download", url, threads, includeCss: true }
+            socket.send(JSON.stringify(data))
+        }
+
+        function showContent(content){
+            const newWindow = window.open("about:blank", "_blank")
+            newWindow.document.write(content)
+        }
+
+        window.onload = () =>{
+            const downloadedContent = localStorage.getItem("downloadedContent")
+
+            if (downloadedContent){
+				const contentList = document.getElementById("contentList")
+                const li = document.createElement("li")
+                const link = document.createElement("a")
+				let parser = new DOMParser()
+				let doc = parser.parseFromString(downloadedContent, 'text/html')
+				
+                link.href = "#"
+                link.innerText = "Загруженный контент:" + " " + doc.title
+                link.onclick = () =>{
+                    showContent(downloadedContent)
+                }
+                li.appendChild(link)
+                contentList.appendChild(li)
+            }
+        }
+    </script>
+</body>
+</html>
